@@ -31,7 +31,7 @@ PASSWORD = "demo1234"
 DEFAULT_CONFIG = {
     "log_interval_ms": 1000,
     "sample_rate_hz": 10,
-    "device_name": "DemoDevice",
+    "device_name": "PtyDemo",
 }
 
 CONFIG_VALIDATORS: dict[str, tuple[type, int | None, int | None]] = {
@@ -41,7 +41,7 @@ CONFIG_VALIDATORS: dict[str, tuple[type, int | None, int | None]] = {
 }
 
 
-class DemoDevice:
+class PtyDemo:
     """Simulated serial device with a CLI command interface."""
 
     def __init__(self, send_fn):
@@ -68,7 +68,7 @@ class DemoDevice:
     # -- Public interface ---------------------------------------------------
 
     def boot(self) -> None:
-        self._write(f"[BOOT] DemoDevice v{VERSION}")
+        self._write(f"[BOOT] PtyDemo v{VERSION}")
         self._write("[BOOT] Ready.")
         self._prompt()
 
@@ -192,7 +192,7 @@ class DemoDevice:
         self._prompt()
 
     def _cmd_version(self, _args: str) -> None:
-        self._write(f"DemoDevice v{VERSION}")
+        self._write(f"PtyDemo v{VERSION}")
         self._prompt()
 
     def _cmd_uptime(self, _args: str) -> None:
@@ -397,7 +397,7 @@ def main() -> None:
     attrs_raw[5] = baud  # ospeed
     termios.tcsetattr(slave_fd, termios.TCSANOW, attrs_raw)
 
-    print("DemoDevice pty ready.", flush=True)
+    print("PtyDemo pty ready.", flush=True)
     print(f"Connect to: {slave_path}", flush=True)
     print(f"  screen {slave_path} 115200", flush=True)
     print("  or point the Serial MCP server at this path.", flush=True)
@@ -409,7 +409,7 @@ def main() -> None:
         except OSError:
             pass
 
-    device = DemoDevice(send)
+    device = PtyDemo(send)
     device.boot()
 
     try:

@@ -17,7 +17,7 @@ python3 pty_server.py
 Output:
 
 ```
-DemoDevice pty ready.
+PtyDemo pty ready.
 Connect to: /dev/ttys004
   screen /dev/ttys004 115200
   or point the Serial MCP server at this path.
@@ -43,8 +43,8 @@ serial.readline → { "connection_id": "..." }
 
 ## Protocol
 
-See [demo-device.md](demo-device.md) for the full protocol spec. Register it with the MCP server:
+See [pty-demo-spec.md](pty-demo-spec.md) for the full protocol spec. Register it with the MCP server:
 
 ```
-serial.spec.register  →  { "path": "examples/pty-demo/demo-device.md" }
+serial.spec.register  →  { "path": "examples/pty-demo/pty-demo-spec.md" }
 ```

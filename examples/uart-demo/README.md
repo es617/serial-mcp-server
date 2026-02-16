@@ -65,8 +65,8 @@ python3 uart_server.py --port /dev/ttyUSB0 --baud 9600
 
 ## Protocol
 
-See [demo-device.md](demo-device.md) for the full protocol spec. Register it with the MCP server:
+See [uart-demo-spec.md](uart-demo-spec.md) for the full protocol spec. Register it with the MCP server:
 
 ```
-serial.spec.register  →  { "path": "examples/uart-demo/demo-device.md" }
+serial.spec.register  →  { "path": "examples/uart-demo/uart-demo-spec.md" }
 ```

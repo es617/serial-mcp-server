@@ -29,7 +29,7 @@ PASSWORD = "demo1234"
 DEFAULT_CONFIG = {
     "log_interval_ms": 1000,
     "sample_rate_hz": 10,
-    "device_name": "DemoDevice",
+    "device_name": "UartDemo",
 }
 
 CONFIG_VALIDATORS: dict[str, tuple[type, int | None, int | None]] = {
@@ -39,7 +39,7 @@ CONFIG_VALIDATORS: dict[str, tuple[type, int | None, int | None]] = {
 }
 
 
-class DemoDevice:
+class UartDemo:
     """Simulated serial device with a CLI command interface."""
 
     def __init__(self, send_fn):
@@ -66,7 +66,7 @@ class DemoDevice:
     # -- Public interface ---------------------------------------------------
 
     def boot(self) -> None:
-        self._write(f"[BOOT] DemoDevice v{VERSION}")
+        self._write(f"[BOOT] UartDemo v{VERSION}")
         self._write("[BOOT] Ready.")
         self._prompt()
 
@@ -190,7 +190,7 @@ class DemoDevice:
         self._prompt()
 
     def _cmd_version(self, _args: str) -> None:
-        self._write(f"DemoDevice v{VERSION}")
+        self._write(f"UartDemo v{VERSION}")
         self._prompt()
 
     def _cmd_uptime(self, _args: str) -> None:
@@ -389,14 +389,14 @@ def main() -> None:
     args = parser.parse_args()
 
     ser = serial.Serial(args.port, args.baud, timeout=0.05)
-    print(f"DemoDevice running on {args.port} at {args.baud} baud.")
+    print(f"UartDemo running on {args.port} at {args.baud} baud.")
     print("Press Ctrl+C to stop.")
     print()
 
     def send(data: bytes) -> None:
         ser.write(data)
 
-    device = DemoDevice(send)
+    device = UartDemo(send)
     device.boot()
 
     try:

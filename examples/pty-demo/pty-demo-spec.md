@@ -1,7 +1,7 @@
 ---
 kind: serial-protocol
-name: DemoDevice Protocol
-device_name_contains: DemoDevice
+name: PtyDemo Protocol
+device_name_contains: PtyDemo
 connection:
   baudrate: 115200
   bytesize: 8
@@ -10,7 +10,7 @@ connection:
   newline: "\r\n"
 ---
 
-# DemoDevice Protocol
+# PtyDemo Protocol
 
 Simulated serial device for testing the Serial MCP server.
 
@@ -35,7 +35,7 @@ Simulated serial device for testing the Serial MCP server.
 On power-up (or after `reboot` / `factory-reset`), the device prints:
 
 ```
-[BOOT] DemoDevice v1.0.0
+[BOOT] PtyDemo v1.0.0
 [BOOT] Ready.
 >
 ```
@@ -63,7 +63,7 @@ Print firmware version string.
 
 ```
 > version
-DemoDevice v1.0.0
+PtyDemo v1.0.0
 >
 ```
 
@@ -120,7 +120,7 @@ Get all configuration values (no key) or a single key.
 
 ```
 > config get
-{"log_interval_ms":1000,"sample_rate_hz":10,"device_name":"DemoDevice"}
+{"log_interval_ms":1000,"sample_rate_hz":10,"device_name":"PtyDemo"}
 > config get log_interval_ms
 {"log_interval_ms":1000}
 >
@@ -220,7 +220,7 @@ Reset the device to defaults. Requires authentication. Resets config, clears aut
 ```
 > factory-reset
 OK factory reset
-[BOOT] DemoDevice v1.0.0
+[BOOT] PtyDemo v1.0.0
 [BOOT] Ready.
 >
 ```
@@ -232,7 +232,7 @@ Reboot the device. Stops all activity, pauses ~1 second, then prints the boot ba
 ```
 > reboot
 Rebooting...
-[BOOT] DemoDevice v1.0.0
+[BOOT] PtyDemo v1.0.0
 [BOOT] Ready.
 >
 ```
