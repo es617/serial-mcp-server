@@ -37,7 +37,7 @@ GND (pin 6)          ──────── GND
 ### 3. Run the demo device
 
 ```bash
-python3 demo_device.py
+python3 uart_server.py
 ```
 
 Default port is `/dev/serial0` at 115200 baud.
@@ -56,11 +56,11 @@ serial.readline → { "connection_id": "..." }
 
 ```bash
 # Default: /dev/serial0 at 115200 baud
-python3 demo_device.py
+python3 uart_server.py
 
 # Custom port and baud rate
-python3 demo_device.py --port /dev/ttyAMA0
-python3 demo_device.py --port /dev/ttyUSB0 --baud 9600
+python3 uart_server.py --port /dev/ttyAMA0
+python3 uart_server.py --port /dev/ttyUSB0 --baud 9600
 ```
 
 ## Protocol

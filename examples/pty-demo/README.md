@@ -11,7 +11,7 @@ A simulated serial device that runs locally using a pseudo-terminal pair. No har
 ## Quick start
 
 ```bash
-python3 demo_device.py
+python3 pty_server.py
 ```
 
 Output:
