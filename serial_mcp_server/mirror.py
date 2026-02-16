@@ -21,6 +21,7 @@ logger = logging.getLogger("serial_mcp_server")
 _IS_UNIX = sys.platform != "win32"
 
 if _IS_UNIX:
+    import fcntl
     import select
     import termios
     import tty
@@ -198,6 +199,11 @@ class MirrorSession(ReaderThread):
         # Create PTY pair.
         self._master_fd, self._slave_fd = os.openpty()
 
+        # Non-blocking master so writes don't stall the reader thread
+        # when nothing is connected to the slave.
+        flags = fcntl.fcntl(self._master_fd, fcntl.F_GETFL)
+        fcntl.fcntl(self._master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
         # Put slave in raw mode and set baud rate.
         try:
             tty.setraw(self._slave_fd)
@@ -283,8 +289,8 @@ class MirrorSession(ReaderThread):
         self.buffer.write(data)
         try:
             os.write(self._master_fd, data)
-        except OSError:
-            pass  # PTY client not connected.
+        except (OSError, BlockingIOError):
+            pass  # PTY buffer full or client not connected — drop mirror data.
 
     def mirror_info(self) -> dict[str, Any] | None:
         return {
