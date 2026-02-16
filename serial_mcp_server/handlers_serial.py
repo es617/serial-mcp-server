@@ -97,7 +97,11 @@ TOOLS: list[Tool] = [
             "Defaults are 115200 baud, 8N1, \\r\\n line terminator — the most common settings. "
             "If you don't know the correct settings, check for a protocol spec with serial.spec.list "
             "or ask the user. Wrong baud rate is the most common cause of garbled data. "
-            "After opening, do a serial.read to check for any buffered data — many devices "
+            "After opening: 1) Use serial.spec.list to check for a matching protocol spec. "
+            "If a match is found, attach it with serial.spec.attach. "
+            "2) Use serial.plugin.list to check for a plugin that matches the device. "
+            "If a matching plugin is loaded, its tools are available to use directly. "
+            "3) Do a serial.read to check for any buffered data — many devices "
             "send a boot banner, prompt, or status message on connection."
         ),
         inputSchema={
