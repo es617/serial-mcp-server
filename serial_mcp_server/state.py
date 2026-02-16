@@ -48,7 +48,12 @@ class SerialConnection:
 
 
 class SerialState:
-    """Central mutable state shared by all tool handlers."""
+    """Central mutable state shared by all tool handlers.
+
+    All mutations happen on the asyncio event loop (single-threaded), so no
+    lock is needed.  Background reader threads only touch ``conn.buffer``
+    and ``conn.ser``, which have their own synchronisation.
+    """
 
     def __init__(self, max_connections: int = 10) -> None:
         self.connections: dict[str, SerialConnection] = {}

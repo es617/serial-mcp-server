@@ -135,7 +135,10 @@ class ReaderThread:
     def alive(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
 
+    _MAX_CONSECUTIVE_ERRORS = 10
+
     def _run(self) -> None:
+        errors = 0
         while not self._stop.is_set():
             try:
                 waiting = self.ser.in_waiting
@@ -148,10 +151,16 @@ class ReaderThread:
                     data = self.ser.read(1)
                     if data:
                         self._on_data(data)
+                errors = 0
             except Exception:
                 if self._stop.is_set():
                     break
-                # Port may have been closed or disconnected.
+                errors += 1
+                if errors >= self._MAX_CONSECUTIVE_ERRORS:
+                    logger.warning(
+                        "Reader thread for %s stopping after %d consecutive errors.", self.ser.port, errors
+                    )
+                    break
                 time.sleep(0.1)
 
     def _on_data(self, data: bytes) -> None:

@@ -15,6 +15,8 @@ from serial_mcp_server.handlers_serial import (
     handle_flush,
     handle_list_ports,
     handle_open,
+    handle_pulse_dtr,
+    handle_pulse_rts,
     handle_read,
     handle_read_until,
     handle_readline,
@@ -290,6 +292,45 @@ class TestControlLines:
         result = await handle_set_rts(state, {"connection_id": "s1", "value": True})
         assert result["ok"]
         assert result["rts"] is True
+
+    async def test_pulse_dtr(self, connected_entry):
+        state, conn = connected_entry
+        result = await handle_pulse_dtr(state, {"connection_id": "s1", "duration_ms": 10})
+        assert result["ok"]
+        assert result["duration_ms"] == 10
+        # DTR should end high (True) after pulse
+        assert conn.ser.dtr is True
+
+    async def test_pulse_rts(self, connected_entry):
+        state, conn = connected_entry
+        result = await handle_pulse_rts(state, {"connection_id": "s1", "duration_ms": 10})
+        assert result["ok"]
+        assert result["duration_ms"] == 10
+        assert conn.ser.rts is True
+
+    async def test_pulse_dtr_clamped(self, connected_entry):
+        state, _conn = connected_entry
+        result = await handle_pulse_dtr(state, {"connection_id": "s1", "duration_ms": 999999})
+        assert result["ok"]
+        assert result["duration_ms"] == 10000
+
+
+class TestOpenResourceCleanup:
+    async def test_open_cleans_up_on_add_connection_failure(self):
+        """If add_connection raises (max connections), serial port and reader are closed."""
+        state = SerialState(max_connections=0)
+        mock_ser = MagicMock()
+        mock_ser.is_open = True
+        mock_reader = MagicMock()
+        mock_reader.mirror_info.return_value = None
+        with (
+            patch("serial_mcp_server.handlers_serial.pyserial.Serial", return_value=mock_ser),
+            patch("serial_mcp_server.handlers_serial.create_reader", return_value=mock_reader),
+            pytest.raises(RuntimeError),
+        ):
+            await handle_open(state, {"port": "/dev/ttyUSB0"})
+        mock_reader.stop.assert_called_once()
+        mock_ser.close.assert_called_once()
 
 
 class TestFormatData:

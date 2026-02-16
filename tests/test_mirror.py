@@ -178,9 +178,8 @@ class TestReaderThread:
         time.sleep(0.1)
         reader.stop()
 
-        assert buf.available >= 5 or buf.read(5, timeout=0.01) == b"hello" or True
-        # The thread read at least once
-        assert ser.read.called
+        assert buf.available >= 5
+        assert buf.read(5, timeout=0.01) == b"hello"
 
     def test_start_stop(self):
         buf = SerialBuffer()

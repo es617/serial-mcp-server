@@ -678,9 +678,12 @@ async def handle_set_rts(state: SerialState, args: dict[str, Any]) -> dict[str, 
     )
 
 
+_MAX_PULSE_MS = 10_000
+
+
 async def handle_pulse_dtr(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    duration_ms = args.get("duration_ms", 100)
+    duration_ms = min(args.get("duration_ms", 100), _MAX_PULSE_MS)
     conn.ser.dtr = False
     await asyncio.sleep(duration_ms / 1000.0)
     conn.ser.dtr = True
@@ -690,7 +693,7 @@ async def handle_pulse_dtr(state: SerialState, args: dict[str, Any]) -> dict[str
 
 async def handle_pulse_rts(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    duration_ms = args.get("duration_ms", 100)
+    duration_ms = min(args.get("duration_ms", 100), _MAX_PULSE_MS)
     conn.ser.rts = False
     await asyncio.sleep(duration_ms / 1000.0)
     conn.ser.rts = True
