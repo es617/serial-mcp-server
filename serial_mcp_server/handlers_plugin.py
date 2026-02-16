@@ -28,6 +28,16 @@ from mcp.types import Tool
 from serial_mcp_server.helpers import _ok, _err  # _ok(key=val) / _err("code", "message")
 from serial_mcp_server.state import SerialState
 
+# Import core handlers to interact with the device.
+# IMPORTANT: always use these instead of conn.ser directly — a background
+# thread owns the serial port for reads, and writes need a lock.
+from serial_mcp_server.handlers_serial import (
+    handle_write,      # send data to the device
+    handle_read,       # read raw bytes
+    handle_readline,   # read one line (up to newline)
+    handle_read_until, # read until a delimiter string
+)
+
 # Optional metadata — helps the agent match this plugin to a device.
 # All fields are optional. Use what makes sense for your device.
 META = {{
@@ -52,12 +62,18 @@ TOOLS = [
 
 async def handle_example(state: SerialState, args: dict) -> dict:
     connection_id = args["connection_id"]
-    # get_connection raises KeyError on unknown connection_id.
-    # The server catches this automatically — don't wrap in try/except.
-    conn = state.get_connection(connection_id)
-    # Use conn.ser (pyserial.Serial) to interact with the device:
-    #   conn.ser.write(b"COMMAND\\r\\n")
-    #   response = conn.ser.read_until(b"\\n")
+    # Send a command using handle_write + handle_read_until:
+    #   await handle_write(state, {{
+    #       "connection_id": connection_id,
+    #       "data": "COMMAND",
+    #       "append_newline": True,
+    #   }})
+    #   resp = await handle_read_until(state, {{
+    #       "connection_id": connection_id,
+    #       "delimiter": "> ",
+    #       "timeout_ms": 2000,
+    #   }})
+    #   text = resp["data"]
     #
     # Return errors with: return _err("error_code", "Human-readable message")
     # Return success with: return _ok(key1=val1, key2=val2)
