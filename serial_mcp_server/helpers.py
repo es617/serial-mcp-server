@@ -27,7 +27,7 @@ if MIRROR_PTY != "off" and os.name == "nt":
     MIRROR_PTY = "off"
 MIRROR_PTY_LINK: str | None = os.environ.get("SERIAL_MCP_MIRROR_LINK", "").strip() or None
 if MIRROR_PTY != "off" and MIRROR_PTY_LINK is None:
-    MIRROR_PTY_LINK = "/tmp/serial-mcp"
+    MIRROR_PTY_LINK = "/tmp/serial-mcp"  # nosec B108 — intentional default, user-overridable via SERIAL_MCP_MIRROR_LINK
 
 # ---------------------------------------------------------------------------
 # Response builders

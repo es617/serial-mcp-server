@@ -90,7 +90,11 @@ jobs:
           echo "Passed" >> "$GITHUB_STEP_SUMMARY"
           echo "### pip-audit (dependency vulnerabilities)" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          cat pip-audit-report.txt >> "$GITHUB_STEP_SUMMARY"
+          if [ -f pip-audit-report.txt ]; then
+            cat pip-audit-report.txt >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "pip-audit did not run" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   release:
