@@ -38,6 +38,9 @@ Path containment is enforced for all filesystem operations:
 - **Specs** must be inside the project directory (parent of `.serial_mcp/`)
 - **Traces** always write to `.serial_mcp/traces/trace.jsonl` (not configurable)
 
+The agent is not a trusted principal — the server enforces all safety boundaries regardless of what the agent “wants” to do.
+
+
 ---
 
 ## Protocol specs — teaching the agent about your device
@@ -71,7 +74,7 @@ You can also write specs by hand. They're just markdown files with a small YAML 
 
 ### How the agent uses specs
 
-After opening a connection, the agent checks for registered specs, attaches a matching one, and references it throughout the session — looking up commands, expected responses, and multi-step flows as needed.
+After opening a connection, the agent can check for registered specs, attach a matching one, and reference it throughout the session — looking up commands, expected responses, and multi-step flows as needed.
 
 Specs are freeform markdown. The agent reads and reasons about them — there's no rigid schema to fight, so specs can evolve naturally with your protocol.
 
@@ -123,7 +126,7 @@ This is the core loop: the agent explores a device, writes a plugin for it, and 
 
 ### Beyond the agent
 
-Plugin code is real Python that talks to real hardware. It can serve as a starting point for standalone test scripts, CLI tools, or production libraries. The agent writes the first draft based on the device spec, and you refine it into whatever you need.
+Plugin code runs with the same privileges as the MCP server process. It can serve as a starting point for standalone test scripts, CLI tools, or production libraries. The agent writes the first draft based on the device spec, and you refine it into whatever you need.
 
 ---
 
@@ -160,6 +163,54 @@ A plugin doesn't require a spec, and a spec doesn't require a plugin. But when b
 
 ---
 
+## PTY Mirror — virtual clone ports
+
+When the MCP server opens a serial port, it has exclusive access — no other tool can read from it. PTY mirroring solves this by creating a virtual clone port backed by a pseudo-terminal (PTY). External tools connect to the clone and see the same byte stream the server sees.
+
+### Architecture
+
+Every open connection has a background reader thread and a thread-safe buffer. All reads go through the buffer, whether or not mirroring is enabled.
+
+```
+Always (all platforms):
+
+  serial port → background reader thread → SerialBuffer → MCP tools read from here
+
+Mirror on (macOS/Linux only):
+
+  background reader thread also → PTY master → PTY slave (external tool reads here)
+  PTY slave (rw mode) → PTY master → background reader thread → serial port
+```
+
+### Modes
+
+| Mode | Data flow |
+|---|---|
+| `off` | No PTY. Serial data goes to the buffer only. |
+| `ro` | Serial data is teed to both the buffer and the PTY. External tools can observe but not write. |
+| `rw` | Same as `ro`, plus data written to the PTY slave is forwarded to the real serial port. A write lock prevents interleaving between MCP writes and PTY writes. |
+
+### Configuration
+
+```
+SERIAL_MCP_MIRROR=off              # off (default), ro, or rw
+SERIAL_MCP_MIRROR_LINK=/tmp/serial-mcp   # symlink base path (default when mirror is enabled)
+```
+
+Each connection gets a numbered symlink: `/tmp/serial-mcp0`, `/tmp/serial-mcp1`, etc. The default base path is `/tmp/serial-mcp` — override with `SERIAL_MCP_MIRROR_LINK` if you want a different name.
+
+### Platform
+
+PTY mirroring requires macOS or Linux. On Windows, the server logs a warning and ignores the setting — the buffer and background reader still work normally.
+
+### When to use each mode
+
+- **`off`** — default. Use when the MCP server is the only thing talking to the device.
+- **`ro`** — use when you want to monitor traffic in another terminal (e.g. `screen`, `minicom`, a logic analyzer) while the agent drives the device.
+- **`rw`** — use when you need bidirectional access from both the agent and an external tool simultaneously. Be aware that both can write to the device, so coordinate accordingly.
+
+---
+
 ## The agent's decision flow
 
 After opening a connection, the agent follows this flow:
@@ -184,4 +235,4 @@ Check serial.plugin.list ◄─────────────────�
   with raw serial tools
 ```
 
-The agent handles this automatically. The tool descriptions guide it through each step.
+The tool descriptions guide it through each step.

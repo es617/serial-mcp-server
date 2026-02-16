@@ -76,9 +76,16 @@ Returns:
     "write_timeout_ms": 200,
     "encoding": "utf-8",
     "newline": "'\\r\\n'"
+  },
+  "mirror": {
+    "pty_path": "/dev/ttys004",
+    "link": "/tmp/serial-mcp0",
+    "mode": "ro"
   }
 }
 ```
+
+The `mirror` field is only present when `SERIAL_MCP_MIRROR` is set to `ro` or `rw`.
 
 ### serial.close
 
@@ -96,7 +103,7 @@ Check whether a serial connection is still open and return its configuration.
 { "connection_id": "s1a2b3c4" }
 ```
 
-Returns `{ "ok": true, "is_open": true, "config": { ... } }`.
+Returns `{ "ok": true, "is_open": true, "config": { ... }, "buffered_bytes": 0 }`. Includes `mirror` when active.
 
 ### serial.read
 
@@ -224,11 +231,19 @@ Returns:
     "baudrate": 115200,
     "encoding": "utf-8",
     "opened_at": 1700000000.0,
-    "last_seen_ts": 1700000050.0
+    "last_seen_ts": 1700000050.0,
+    "buffered_bytes": 0,
+    "mirror": {
+      "pty_path": "/dev/ttys004",
+      "link": "/tmp/serial-mcp0",
+      "mode": "ro"
+    }
   }],
   "count": 1
 }
 ```
+
+The `mirror` field is only present on connections where `SERIAL_MCP_MIRROR` is `ro` or `rw`. `buffered_bytes` shows how many unread bytes are in the connection's read buffer.
 
 ---
 

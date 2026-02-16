@@ -29,6 +29,20 @@
           "format": "string",
           "isSecret": false,
           "name": "SERIAL_MCP_PLUGINS"
+        },
+        {
+          "description": "PTY mirror mode: 'off' (default), 'ro' (read-only), or 'rw' (read-write). macOS/Linux only.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SERIAL_MCP_MIRROR"
+        },
+        {
+          "description": "Base path for PTY symlinks (default /tmp/serial-mcp when mirror is enabled). Connections get numbered: /tmp/serial-mcp0, /tmp/serial-mcp1, etc.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SERIAL_MCP_MIRROR_LINK"
         }
       ]
     }

@@ -10,6 +10,8 @@ from typing import Any
 
 import serial as pyserial
 
+from serial_mcp_server.mirror import ReaderThread, SerialBuffer
+
 logger = logging.getLogger("serial_mcp_server")
 
 
@@ -33,6 +35,8 @@ class SerialConnection:
     encoding: str
     newline: str
     ser: pyserial.Serial
+    buffer: SerialBuffer = field(default_factory=SerialBuffer)
+    reader: ReaderThread | None = None
     opened_at: float = field(default_factory=time.time)
     last_seen_ts: float = field(default_factory=time.time)
     spec: dict[str, Any] | None = None
@@ -80,6 +84,12 @@ class SerialState:
     def close_connection(self, connection_id: str) -> dict[str, Any]:
         """Close and remove a connection. Idempotent on already-closed ports."""
         conn = self.remove_connection(connection_id)
+        # Stop the background reader first (cleans up PTY if mirror is active).
+        if conn.reader is not None:
+            try:
+                conn.reader.stop()
+            except Exception:
+                pass
         try:
             if conn.ser.is_open:
                 conn.ser.close()
@@ -88,8 +98,13 @@ class SerialState:
         return {"connection_id": connection_id, "port": conn.port}
 
     async def shutdown(self) -> None:
-        """Close all open serial ports quickly."""
+        """Stop all readers and close all open serial ports."""
         for conn in list(self.connections.values()):
+            if conn.reader is not None:
+                try:
+                    conn.reader.stop()
+                except Exception:
+                    pass
             try:
                 if conn.ser.is_open:
                     conn.ser.close()

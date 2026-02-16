@@ -36,17 +36,21 @@ TOOLS: list[Tool] = [
 async def handle_connections_list(state: SerialState, _args: dict[str, Any]) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
     for conn in state.connections.values():
-        items.append(
-            {
-                "connection_id": conn.connection_id,
-                "port": conn.port,
-                "is_open": conn.ser.is_open,
-                "baudrate": conn.baudrate,
-                "encoding": conn.encoding,
-                "opened_at": conn.opened_at,
-                "last_seen_ts": conn.last_seen_ts,
-            }
-        )
+        entry: dict[str, Any] = {
+            "connection_id": conn.connection_id,
+            "port": conn.port,
+            "is_open": conn.ser.is_open,
+            "baudrate": conn.baudrate,
+            "encoding": conn.encoding,
+            "opened_at": conn.opened_at,
+            "last_seen_ts": conn.last_seen_ts,
+            "buffered_bytes": conn.buffer.available,
+        }
+        if conn.reader is not None:
+            mirror = conn.reader.mirror_info()
+            if mirror is not None:
+                entry["mirror"] = mirror
+        items.append(entry)
     return _ok(
         message=f"{len(items)} connection(s).",
         connections=items,

@@ -12,7 +12,8 @@ import serial as pyserial
 import serial.tools.list_ports
 from mcp.types import Tool
 
-from serial_mcp_server.helpers import _err, _ok
+from serial_mcp_server.helpers import MIRROR_PTY, MIRROR_PTY_LINK, _err, _ok
+from serial_mcp_server.mirror import SerialBuffer, create_reader
 from serial_mcp_server.state import SerialConnection, SerialState
 
 logger = logging.getLogger("serial_mcp_server")
@@ -472,6 +473,10 @@ async def handle_open(state: SerialState, args: dict[str, Any]) -> dict[str, Any
     ser = await asyncio.to_thread(pyserial.Serial, **kwargs)
 
     connection_id = state.generate_id()
+    buf = SerialBuffer()
+    reader = create_reader(ser, buf, MIRROR_PTY, MIRROR_PTY_LINK)
+    reader.start()
+
     conn = SerialConnection(
         connection_id=connection_id,
         port=port,
@@ -484,14 +489,20 @@ async def handle_open(state: SerialState, args: dict[str, Any]) -> dict[str, Any
         encoding=encoding,
         newline=newline,
         ser=ser,
+        buffer=buf,
+        reader=reader,
     )
     state.add_connection(conn)
 
-    return _ok(
+    result = _ok(
         message=f"Opened {port} at {baudrate} baud.",
         connection_id=connection_id,
         config=_conn_config(conn),
     )
+    mirror = reader.mirror_info()
+    if mirror is not None:
+        result["mirror"] = mirror
+    return result
 
 
 async def handle_close(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
@@ -509,12 +520,12 @@ async def handle_connection_status(state: SerialState, args: dict[str, Any]) -> 
         "config": _conn_config(conn),
         "opened_at": conn.opened_at,
         "last_seen_ts": conn.last_seen_ts,
+        "buffered_bytes": conn.buffer.available,
     }
-    if is_open:
-        try:
-            result["in_waiting"] = conn.ser.in_waiting
-        except (OSError, pyserial.SerialException):
-            result["in_waiting"] = None
+    if conn.reader is not None:
+        mirror = conn.reader.mirror_info()
+        if mirror is not None:
+            result["mirror"] = mirror
     return _ok(message=f"{conn.port} is {'open' if is_open else 'closed'}.", **result)
 
 
@@ -523,15 +534,9 @@ async def handle_read(state: SerialState, args: dict[str, Any]) -> dict[str, Any
     nbytes = min(args.get("nbytes", 256), MAX_READ_BYTES)
     fmt = args.get("as", "text")
     timeout_ms = args.get("timeout_ms")
+    timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else conn.timeout
 
-    original_timeout = conn.ser.timeout
-    if timeout_ms is not None:
-        conn.ser.timeout = timeout_ms / 1000.0
-    try:
-        raw = await asyncio.to_thread(conn.ser.read, nbytes)
-    finally:
-        if timeout_ms is not None:
-            conn.ser.timeout = original_timeout
+    raw = await asyncio.to_thread(conn.buffer.read, nbytes, timeout_s)
 
     conn.last_seen_ts = time.time()
     formatted = _format_data(raw, fmt, conn.encoding)
@@ -567,8 +572,17 @@ async def handle_write(state: SerialState, args: dict[str, Any]) -> dict[str, An
     if append_newline:
         payload += newline.encode(encoding, errors="replace")
 
-    n_written = await asyncio.to_thread(conn.ser.write, payload)
-    await asyncio.to_thread(conn.ser.flush)
+    # Use the reader's write_lock to prevent interleaving with PTY→serial
+    # forwarding in rw mirror mode.
+    lock = conn.reader.write_lock if conn.reader is not None else None
+    if lock is not None:
+        lock.acquire()
+    try:
+        n_written = await asyncio.to_thread(conn.ser.write, payload)
+        await asyncio.to_thread(conn.ser.flush)
+    finally:
+        if lock is not None:
+            lock.release()
 
     conn.last_seen_ts = time.time()
     return _ok(
@@ -584,15 +598,9 @@ async def handle_readline(state: SerialState, args: dict[str, Any]) -> dict[str,
     timeout_ms = args.get("timeout_ms")
     newline = args.get("newline", conn.newline)
     expected = newline.encode(conn.encoding, errors="replace")
+    timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else conn.timeout
 
-    original_timeout = conn.ser.timeout
-    if timeout_ms is not None:
-        conn.ser.timeout = timeout_ms / 1000.0
-    try:
-        raw = await asyncio.to_thread(conn.ser.read_until, expected, max_bytes)
-    finally:
-        if timeout_ms is not None:
-            conn.ser.timeout = original_timeout
+    raw = await asyncio.to_thread(conn.buffer.read_until, expected, max_bytes, timeout_s)
 
     conn.last_seen_ts = time.time()
     formatted = _format_data(raw, fmt, conn.encoding)
@@ -610,15 +618,9 @@ async def handle_read_until(state: SerialState, args: dict[str, Any]) -> dict[st
     fmt = args.get("as", "text")
     timeout_ms = args.get("timeout_ms")
     expected = delimiter.encode(conn.encoding, errors="replace")
+    timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else conn.timeout
 
-    original_timeout = conn.ser.timeout
-    if timeout_ms is not None:
-        conn.ser.timeout = timeout_ms / 1000.0
-    try:
-        raw = await asyncio.to_thread(conn.ser.read_until, expected, max_bytes)
-    finally:
-        if timeout_ms is not None:
-            conn.ser.timeout = original_timeout
+    raw = await asyncio.to_thread(conn.buffer.read_until, expected, max_bytes, timeout_s)
 
     conn.last_seen_ts = time.time()
     formatted = _format_data(raw, fmt, conn.encoding)
@@ -635,6 +637,7 @@ async def handle_flush(state: SerialState, args: dict[str, Any]) -> dict[str, An
 
     if what in ("input", "both"):
         await asyncio.to_thread(conn.ser.reset_input_buffer)
+        conn.buffer.clear()
     if what in ("output", "both"):
         await asyncio.to_thread(conn.ser.reset_output_buffer)
 

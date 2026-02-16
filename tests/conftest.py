@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import threading
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
+from serial_mcp_server.mirror import SerialBuffer
 from serial_mcp_server.state import SerialConnection, SerialState
 
 
@@ -30,8 +32,18 @@ def mock_serial():
 
 
 @pytest.fixture()
-def connected_entry(serial_state, mock_serial):
+def mock_reader():
+    """MagicMock ReaderThread with write_lock."""
+    reader = MagicMock()
+    reader.write_lock = threading.Lock()
+    reader.mirror_info.return_value = None
+    return reader
+
+
+@pytest.fixture()
+def connected_entry(serial_state, mock_serial, mock_reader):
     """SerialConnection registered in serial_state as 's1'. Returns (state, conn)."""
+    buf = SerialBuffer()
     conn = SerialConnection(
         connection_id="s1",
         port="/dev/ttyUSB0",
@@ -44,6 +56,8 @@ def connected_entry(serial_state, mock_serial):
         encoding="utf-8",
         newline="\n",
         ser=mock_serial,
+        buffer=buf,
+        reader=mock_reader,
     )
     serial_state.connections["s1"] = conn
     return serial_state, conn

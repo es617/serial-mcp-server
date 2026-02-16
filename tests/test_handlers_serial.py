@@ -74,11 +74,36 @@ class TestOpen:
         state = SerialState()
         mock_ser = MagicMock()
         mock_ser.is_open = True
-        with patch("serial_mcp_server.handlers_serial.pyserial.Serial", return_value=mock_ser):
+        mock_reader = MagicMock()
+        mock_reader.mirror_info.return_value = None
+        with (
+            patch("serial_mcp_server.handlers_serial.pyserial.Serial", return_value=mock_ser),
+            patch("serial_mcp_server.handlers_serial.create_reader", return_value=mock_reader),
+        ):
             result = await handle_open(state, {"port": "/dev/ttyUSB0"})
         assert result["ok"]
         assert "connection_id" in result
         assert result["config"]["baudrate"] == 115200
+        mock_reader.start.assert_called_once()
+
+    async def test_open_with_mirror(self):
+        state = SerialState()
+        mock_ser = MagicMock()
+        mock_ser.is_open = True
+        mock_reader = MagicMock()
+        mock_reader.mirror_info.return_value = {
+            "pty_path": "/dev/ttys004",
+            "link": "/tmp/serial-mcp0",
+            "mode": "ro",
+        }
+        with (
+            patch("serial_mcp_server.handlers_serial.pyserial.Serial", return_value=mock_ser),
+            patch("serial_mcp_server.handlers_serial.create_reader", return_value=mock_reader),
+        ):
+            result = await handle_open(state, {"port": "/dev/ttyUSB0"})
+        assert result["ok"]
+        assert result["mirror"]["pty_path"] == "/dev/ttys004"
+        assert result["mirror"]["mode"] == "ro"
 
     async def test_open_invalid_parity(self):
         state = SerialState()
@@ -96,7 +121,12 @@ class TestOpen:
         state = SerialState()
         mock_ser = MagicMock()
         mock_ser.is_open = True
-        with patch("serial_mcp_server.handlers_serial.pyserial.Serial", return_value=mock_ser):
+        mock_reader = MagicMock()
+        mock_reader.mirror_info.return_value = None
+        with (
+            patch("serial_mcp_server.handlers_serial.pyserial.Serial", return_value=mock_ser),
+            patch("serial_mcp_server.handlers_serial.create_reader", return_value=mock_reader),
+        ):
             result1 = await handle_open(state, {"port": "/dev/ttyUSB0"})
         assert result1["ok"]
 
@@ -121,17 +151,34 @@ class TestClose:
 
 class TestConnectionStatus:
     async def test_status(self, connected_entry):
-        state, _conn = connected_entry
+        state, conn = connected_entry
         result = await handle_connection_status(state, {"connection_id": "s1"})
         assert result["ok"]
         assert result["is_open"] is True
         assert result["config"]["baudrate"] == 115200
+        assert result["buffered_bytes"] == 0
+
+    async def test_status_with_buffered_data(self, connected_entry):
+        state, conn = connected_entry
+        conn.buffer.write(b"hello")
+        result = await handle_connection_status(state, {"connection_id": "s1"})
+        assert result["buffered_bytes"] == 5
+
+    async def test_status_with_mirror(self, connected_entry):
+        state, conn = connected_entry
+        conn.reader.mirror_info.return_value = {
+            "pty_path": "/dev/ttys004",
+            "link": None,
+            "mode": "ro",
+        }
+        result = await handle_connection_status(state, {"connection_id": "s1"})
+        assert result["mirror"]["pty_path"] == "/dev/ttys004"
 
 
 class TestRead:
     async def test_read_text(self, connected_entry):
         state, conn = connected_entry
-        conn.ser.read.return_value = b"hello"
+        conn.buffer.write(b"hello")
         result = await handle_read(state, {"connection_id": "s1"})
         assert result["ok"]
         assert result["data"] == "hello"
@@ -140,25 +187,24 @@ class TestRead:
 
     async def test_read_hex(self, connected_entry):
         state, conn = connected_entry
-        conn.ser.read.return_value = b"\x01\x02\x03"
+        conn.buffer.write(b"\x01\x02\x03")
         result = await handle_read(state, {"connection_id": "s1", "as": "hex"})
         assert result["ok"]
         assert result["data"] == "010203"
 
     async def test_read_base64(self, connected_entry):
         state, conn = connected_entry
-        conn.ser.read.return_value = b"\x01\x02\x03"
+        conn.buffer.write(b"\x01\x02\x03")
         result = await handle_read(state, {"connection_id": "s1", "as": "base64"})
         assert result["ok"]
         assert result["data"] == "AQID"
 
-    async def test_read_timeout_override(self, connected_entry):
+    async def test_read_empty_on_timeout(self, connected_entry):
         state, conn = connected_entry
-        conn.ser.read.return_value = b""
-        original = conn.ser.timeout
-        await handle_read(state, {"connection_id": "s1", "timeout_ms": 500})
-        # Timeout should be restored
-        assert conn.ser.timeout == original
+        # Buffer is empty, should return empty after timeout
+        result = await handle_read(state, {"connection_id": "s1", "timeout_ms": 10})
+        assert result["ok"]
+        assert result["n_read"] == 0
 
 
 class TestWrite:
@@ -194,21 +240,26 @@ class TestWrite:
 class TestReadline:
     async def test_readline(self, connected_entry):
         state, conn = connected_entry
-        conn.ser.read_until.return_value = b"hello\n"
+        conn.buffer.write(b"hello\n")
         result = await handle_readline(state, {"connection_id": "s1"})
         assert result["ok"]
         assert result["data"] == "hello\n"
-        conn.ser.read_until.assert_called_once_with(b"\n", 4096)
+
+    async def test_readline_custom_newline(self, connected_entry):
+        state, conn = connected_entry
+        conn.buffer.write(b"hello\r\n")
+        result = await handle_readline(state, {"connection_id": "s1", "newline": "\r\n"})
+        assert result["ok"]
+        assert result["data"] == "hello\r\n"
 
 
 class TestReadUntil:
     async def test_read_until_custom_delimiter(self, connected_entry):
         state, conn = connected_entry
-        conn.ser.read_until.return_value = b"hello>"
+        conn.buffer.write(b"hello>")
         result = await handle_read_until(state, {"connection_id": "s1", "delimiter": ">"})
         assert result["ok"]
         assert result["data"] == "hello>"
-        conn.ser.read_until.assert_called_once_with(b">", 4096)
 
 
 class TestFlush:
