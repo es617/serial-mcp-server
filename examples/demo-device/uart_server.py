@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
-"""Demo serial device using a pty pair.
+"""Demo serial device on a real UART port.
 
-Creates a virtual serial port for local testing on macOS/Linux.
-No external dependencies — pure stdlib.
+Designed for Raspberry Pi but works with any serial port.
+Requires pyserial: pip install pyserial
 
 Usage:
-    python3 pty_server.py
-
-Then connect the Serial MCP server (or screen/minicom) to the
-printed slave path.
+    python3 uart_server.py                      # default: /dev/serial0 at 115200
+    python3 uart_server.py --port /dev/ttyAMA0
+    python3 uart_server.py --port /dev/ttyUSB0 --baud 9600
 """
 
 from __future__ import annotations
 
+import argparse
 import json
-import os
 import random
-import select
-import termios
 import time
-import tty
+
+import serial
 
 # ---------------------------------------------------------------------------
 # Device simulator
@@ -31,7 +29,7 @@ PASSWORD = "demo1234"
 DEFAULT_CONFIG = {
     "log_interval_ms": 1000,
     "sample_rate_hz": 10,
-    "device_name": "PtyDemo",
+    "device_name": "DemoDevice",
 }
 
 CONFIG_VALIDATORS: dict[str, tuple[type, int | None, int | None]] = {
@@ -41,7 +39,7 @@ CONFIG_VALIDATORS: dict[str, tuple[type, int | None, int | None]] = {
 }
 
 
-class PtyDemo:
+class DemoDevice:
     """Simulated serial device with a CLI command interface."""
 
     def __init__(self, send_fn):
@@ -68,7 +66,7 @@ class PtyDemo:
     # -- Public interface ---------------------------------------------------
 
     def boot(self) -> None:
-        self._write(f"[BOOT] PtyDemo v{VERSION}")
+        self._write(f"[BOOT] DemoDevice v{VERSION}")
         self._write("[BOOT] Ready.")
         self._prompt()
 
@@ -192,7 +190,7 @@ class PtyDemo:
         self._prompt()
 
     def _cmd_version(self, _args: str) -> None:
-        self._write(f"PtyDemo v{VERSION}")
+        self._write(f"DemoDevice v{VERSION}")
         self._prompt()
 
     def _cmd_uptime(self, _args: str) -> None:
@@ -380,55 +378,37 @@ class PtyDemo:
 
 
 # ---------------------------------------------------------------------------
-# PTY transport
+# UART transport
 # ---------------------------------------------------------------------------
 
 
 def main() -> None:
-    master_fd, slave_fd = os.openpty()
-    slave_path = os.ttyname(slave_fd)
+    parser = argparse.ArgumentParser(description="Demo serial device on a real UART port.")
+    parser.add_argument("--port", default="/dev/serial0", help="Serial port (default: /dev/serial0)")
+    parser.add_argument("--baud", type=int, default=115200, help="Baud rate (default: 115200)")
+    args = parser.parse_args()
 
-    # Put the slave side in raw mode and set baud rate.
-    tty.setraw(slave_fd)
-    # Restore baud to 115200 (B115200 = 0x1002 on macOS, termios has it).
-    baud = termios.B115200
-    attrs_raw = termios.tcgetattr(slave_fd)
-    attrs_raw[4] = baud  # ispeed
-    attrs_raw[5] = baud  # ospeed
-    termios.tcsetattr(slave_fd, termios.TCSANOW, attrs_raw)
-
-    print("PtyDemo pty ready.", flush=True)
-    print(f"Connect to: {slave_path}", flush=True)
-    print(f"  screen {slave_path} 115200", flush=True)
-    print("  or point the Serial MCP server at this path.", flush=True)
-    print(flush=True)
+    ser = serial.Serial(args.port, args.baud, timeout=0.05)
+    print(f"DemoDevice running on {args.port} at {args.baud} baud.")
+    print("Press Ctrl+C to stop.")
+    print()
 
     def send(data: bytes) -> None:
-        try:
-            os.write(master_fd, data)
-        except OSError:
-            pass
+        ser.write(data)
 
-    device = PtyDemo(send)
+    device = DemoDevice(send)
     device.boot()
 
     try:
         while True:
-            readable, _, _ = select.select([master_fd], [], [], 0.05)
-            if readable:
-                try:
-                    data = os.read(master_fd, 4096)
-                    if not data:
-                        break
-                    device.feed(data)
-                except OSError:
-                    break
+            data = ser.read(ser.in_waiting or 1)
+            if data:
+                device.feed(data)
             device.tick()
     except KeyboardInterrupt:
         print("\nShutting down.")
     finally:
-        os.close(master_fd)
-        os.close(slave_fd)
+        ser.close()
 
 
 if __name__ == "__main__":

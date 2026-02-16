@@ -1,4 +1,4 @@
-"""Plugin for PtyDemo device."""
+"""Plugin for DemoDevice device."""
 
 import json
 
@@ -12,8 +12,8 @@ from serial_mcp_server.helpers import _ok
 from serial_mcp_server.state import SerialState
 
 META = {
-    "description": "PtyDemo device plugin — version, status, config, echo, ping, sampling, logging, auth",
-    "device_name_contains": "PtyDemo",
+    "description": "DemoDevice device plugin — version, status, config, echo, ping, sampling, logging, auth",
+    "device_name_contains": "DemoDevice",
 }
 
 
@@ -48,8 +48,8 @@ async def _send_cmd(state: SerialState, connection_id: str, cmd: str, timeout_ms
 
 TOOLS = [
     Tool(
-        name="ptydemo.version",
-        description="Get PtyDemo firmware version.",
+        name="demo.version",
+        description="Get DemoDevice firmware version.",
         inputSchema={
             "type": "object",
             "properties": {
@@ -59,7 +59,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.status",
+        name="demo.status",
         description="Get device status (state, temp, uptime, logs_enabled, authenticated) as JSON.",
         inputSchema={
             "type": "object",
@@ -70,7 +70,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.ping",
+        name="demo.ping",
         description="Ping the device (expects 'pong').",
         inputSchema={
             "type": "object",
@@ -81,7 +81,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.echo",
+        name="demo.echo",
         description="Echo text back from the device.",
         inputSchema={
             "type": "object",
@@ -93,7 +93,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.uptime",
+        name="demo.uptime",
         description="Get device uptime.",
         inputSchema={
             "type": "object",
@@ -104,7 +104,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.config_get",
+        name="demo.config_get",
         description="Get device configuration. Optionally pass a key to get a single value.",
         inputSchema={
             "type": "object",
@@ -119,7 +119,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.config_set",
+        name="demo.config_set",
         description="Set a device configuration value.",
         inputSchema={
             "type": "object",
@@ -132,7 +132,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.sample",
+        name="demo.sample",
         description="Collect sensor samples from the device.",
         inputSchema={
             "type": "object",
@@ -144,7 +144,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.log_start",
+        name="demo.log_start",
         description="Start periodic logging. Optionally specify interval in milliseconds.",
         inputSchema={
             "type": "object",
@@ -159,7 +159,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.log_stop",
+        name="demo.log_stop",
         description="Stop periodic logging.",
         inputSchema={
             "type": "object",
@@ -170,7 +170,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.auth",
+        name="demo.auth",
         description="Authenticate for privileged commands (secret, factory-reset).",
         inputSchema={
             "type": "object",
@@ -182,7 +182,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.secret",
+        name="demo.secret",
         description="Show secret data (requires prior authentication).",
         inputSchema={
             "type": "object",
@@ -193,7 +193,7 @@ TOOLS = [
         },
     ),
     Tool(
-        name="ptydemo.reboot",
+        name="demo.reboot",
         description="Reboot the device.",
         inputSchema={
             "type": "object",
@@ -292,17 +292,17 @@ async def handle_reboot(state: SerialState, args: dict) -> dict:
 
 
 HANDLERS = {
-    "ptydemo.version": handle_version,
-    "ptydemo.status": handle_status,
-    "ptydemo.ping": handle_ping,
-    "ptydemo.echo": handle_echo,
-    "ptydemo.uptime": handle_uptime,
-    "ptydemo.config_get": handle_config_get,
-    "ptydemo.config_set": handle_config_set,
-    "ptydemo.sample": handle_sample,
-    "ptydemo.log_start": handle_log_start,
-    "ptydemo.log_stop": handle_log_stop,
-    "ptydemo.auth": handle_auth,
-    "ptydemo.secret": handle_secret,
-    "ptydemo.reboot": handle_reboot,
+    "demo.version": handle_version,
+    "demo.status": handle_status,
+    "demo.ping": handle_ping,
+    "demo.echo": handle_echo,
+    "demo.uptime": handle_uptime,
+    "demo.config_get": handle_config_get,
+    "demo.config_set": handle_config_set,
+    "demo.sample": handle_sample,
+    "demo.log_start": handle_log_start,
+    "demo.log_stop": handle_log_stop,
+    "demo.auth": handle_auth,
+    "demo.secret": handle_secret,
+    "demo.reboot": handle_reboot,
 }
