@@ -10,6 +10,7 @@ import time
 from typing import Any
 
 import anyio
+import serial as pyserial
 from mcp.server import NotificationOptions, Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
@@ -97,8 +98,6 @@ def build_server() -> tuple[Server, SerialState]:
         handler = handlers.get(name)
         if handler is None:
             return _result_text(_err("unknown_tool", f"No tool named {name}"))
-
-        import serial as pyserial
 
         try:
             result = await handler(state, arguments)

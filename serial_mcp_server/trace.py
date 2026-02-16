@@ -1,7 +1,7 @@
 """JSONL tracing for Serial MCP tool calls.
 
-In-memory ring buffer with optional file sink. Tracing is off by default;
-set ``SERIAL_MCP_TRACE=1`` to enable.  No serial imports.
+In-memory ring buffer with optional file sink. Tracing is on by default;
+set ``SERIAL_MCP_TRACE=0`` to disable.  No serial imports.
 """
 
 from __future__ import annotations

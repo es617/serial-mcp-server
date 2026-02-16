@@ -492,7 +492,12 @@ async def handle_open(state: SerialState, args: dict[str, Any]) -> dict[str, Any
         buffer=buf,
         reader=reader,
     )
-    state.add_connection(conn)
+    try:
+        state.add_connection(conn)
+    except Exception:
+        reader.stop()
+        ser.close()
+        raise
 
     result = _ok(
         message=f"Opened {port} at {baudrate} baud.",
@@ -573,16 +578,22 @@ async def handle_write(state: SerialState, args: dict[str, Any]) -> dict[str, An
         payload += newline.encode(encoding, errors="replace")
 
     # Use the reader's write_lock to prevent interleaving with PTY→serial
-    # forwarding in rw mirror mode.
+    # forwarding in rw mirror mode.  Acquire via to_thread to avoid blocking
+    # the event loop if the mirror thread is mid-write.
     lock = conn.reader.write_lock if conn.reader is not None else None
-    if lock is not None:
-        lock.acquire()
-    try:
-        n_written = await asyncio.to_thread(conn.ser.write, payload)
-        await asyncio.to_thread(conn.ser.flush)
-    finally:
+
+    def _locked_write() -> int:
         if lock is not None:
-            lock.release()
+            lock.acquire()
+        try:
+            n = conn.ser.write(payload)
+            conn.ser.flush()
+            return n
+        finally:
+            if lock is not None:
+                lock.release()
+
+    n_written = await asyncio.to_thread(_locked_write)
 
     conn.last_seen_ts = time.time()
     return _ok(

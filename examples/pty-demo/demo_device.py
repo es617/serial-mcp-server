@@ -17,11 +17,9 @@ import json
 import os
 import random
 import select
-import sys
 import termios
 import time
 import tty
-
 
 # ---------------------------------------------------------------------------
 # Device simulator
@@ -391,7 +389,6 @@ def main() -> None:
     slave_path = os.ttyname(slave_fd)
 
     # Put the slave side in raw mode and set baud rate.
-    attrs = termios.tcgetattr(slave_fd)
     tty.setraw(slave_fd)
     # Restore baud to 115200 (B115200 = 0x1002 on macOS, termios has it).
     baud = termios.B115200
@@ -400,10 +397,10 @@ def main() -> None:
     attrs_raw[5] = baud  # ospeed
     termios.tcsetattr(slave_fd, termios.TCSANOW, attrs_raw)
 
-    print(f"DemoDevice pty ready.", flush=True)
+    print("DemoDevice pty ready.", flush=True)
     print(f"Connect to: {slave_path}", flush=True)
     print(f"  screen {slave_path} 115200", flush=True)
-    print(f"  or point the Serial MCP server at this path.", flush=True)
+    print("  or point the Serial MCP server at this path.", flush=True)
     print(flush=True)
 
     def send(data: bytes) -> None:

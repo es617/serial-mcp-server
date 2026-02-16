@@ -16,6 +16,12 @@ Initial release.
 - Duplicate port detection (rejects opening the same port twice)
 - Graceful shutdown (closes all serial ports on exit)
 
+### PTY Mirror
+- Virtual clone ports via pseudo-terminals (`SERIAL_MCP_MIRROR=ro` or `rw`)
+- External tools (screen, picocom, etc.) can attach to the same serial session
+- Default symlink at `/tmp/serial-mcp0`, configurable via `SERIAL_MCP_MIRROR_LINK`
+- macOS and Linux only
+
 ### Introspection
 - `serial.connections.list` for recovering connection IDs and inspecting state
 
