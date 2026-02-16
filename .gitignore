@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+.venv/
+serial_mcp_server/_version.py
+.serial_mcp/index.json
+.serial_mcp/traces/
+coverage.md
+.coverage
+.DS_Store
+.mcpregistry_*

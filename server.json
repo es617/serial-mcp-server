@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.es617/serial-mcp-server",
+  "description": "Let AI agents interact with serial devices — list ports, open connections, send commands, and read responses.",
+  "repository": {
+    "url": "https://github.com/es617/serial-mcp-server.git",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "serial-mcp-server",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "description": "Maximum simultaneous open serial connections (default 10)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SERIAL_MCP_MAX_CONNECTIONS"
+        },
+        {
+          "description": "Plugin policy: 'all' or comma-separated plugin names. Unset = disabled.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SERIAL_MCP_PLUGINS"
+        }
+      ]
+    }
+  ]
+}
