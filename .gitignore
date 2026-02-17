@@ -14,3 +14,4 @@ coverage.md
 .coverage
 .DS_Store
 .mcpregistry_*
+.ble_mcp/
