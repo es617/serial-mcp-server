@@ -1,14 +1,20 @@
 # Serial MCP Server
 
+<!-- mcp-name: io.github.es617/serial-mcp-server -->
+
 ![MCP](https://img.shields.io/badge/MCP-compatible-blue)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 ![Serial](https://img.shields.io/badge/Serial-RS232%2FUART-green)
 
 A stateful serial port Model Context Protocol (MCP) server for developer tooling and AI agents.
-Works out of the box with Claude Code and any MCP-compatible runtime. Communicates over **stdio** (no HTTP, no open ports) and uses [pyserial](https://github.com/pyserial/pyserial) for cross-platform serial on macOS, Windows, and Linux.
+Works out of the box with Claude Code and any MCP-compatible runtime. Communicates over **stdio** and uses [pyserial](https://github.com/pyserial/pyserial) for cross-platform serial on macOS, Windows, and Linux.
 
-> **Example:** Let Claude Code list available serial ports, connect to your microcontroller, reset it via DTR, and read the boot banner from real hardware.
+> **Example:** Let Claude Code list available serial ports, connect to your microcontroller, reset it via DTR, and read the boot banner from your hardware.
+
+### Demo
+
+[Video walkthrough](https://www.youtube.com/watch?v=FdFdXjoyyAM) — connecting to a serial device, sending commands, reading responses, and creating plugins.
 
 ---
 
@@ -54,6 +60,8 @@ claude mcp add serial -- serial_mcp
 Then in Claude Code, try:
 
 > "List available serial ports and connect to the one on /dev/ttyUSB0 at 115200 baud."
+
+<p align="center"><img src="https://raw.githubusercontent.com/es617/serial-mcp-server/main/docs/assets/scan.gif" alt="Scanning serial ports" width="600"></p>
 
 ---
 
@@ -229,15 +237,6 @@ npx @modelcontextprotocol/inspector python -m serial_mcp_server
 
 Open the URL with the auth token from the terminal output. The Inspector gives you a web UI to call any tool and see responses in real time.
 
----
-
-## Architecture
-
-- **stdio MCP transport** — no HTTP, no network ports
-- **Stateful** — connections persist in memory across tool calls
-- **Buffered reads** — a background task continuously reads from the serial port into a thread-safe buffer; MCP read tools pull from the buffer
-- **Agent-friendly** — structured JSON outputs with human-readable messages
-- **Graceful shutdown** — stops reader threads and closes all serial ports on exit
 
 ---
 
