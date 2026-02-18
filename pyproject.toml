@@ -8,7 +8,10 @@ dynamic = ["version"]
 description = "Serial port Model Context Protocol server for AI agents and developer tooling"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {file = "LICENSE"}
+license = "MIT"
+authors = [
+    {name = "Enrico Santagati"},
+]
 dependencies = [
     "pyserial>=3.5,<4",
     "mcp>=1.0,<2",
@@ -25,6 +28,12 @@ dev = [
     "pre-commit>=4.0",
     "ruff>=0.9",
 ]
+
+[project.urls]
+Homepage = "https://github.com/es617/serial-mcp-server"
+Repository = "https://github.com/es617/serial-mcp-server"
+Issues = "https://github.com/es617/serial-mcp-server/issues"
+Changelog = "https://github.com/es617/serial-mcp-server/blob/main/CHANGELOG.md"
 
 [project.scripts]
 serial_mcp = "serial_mcp_server.server:main"
