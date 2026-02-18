@@ -263,7 +263,7 @@ This software is provided as-is under the MIT License. You are responsible for w
 
 ## License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License — see [LICENSE](https://github.com/es617/serial-mcp-server/blob/main/LICENSE) for details.
 
 ## Acknowledgements
 
