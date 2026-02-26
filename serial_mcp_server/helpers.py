@@ -34,6 +34,13 @@ if MIRROR_PTY != "off" and MIRROR_PTY_LINK is None:
 # ---------------------------------------------------------------------------
 
 
+def _coerce_bool(value: Any) -> bool:
+    """Coerce a value to bool, handling string representations."""
+    if isinstance(value, str):
+        return value.lower() not in ("false", "0", "")
+    return bool(value)
+
+
 def _ok(**kwargs: Any) -> dict[str, Any]:
     return {"ok": True, **kwargs}
 

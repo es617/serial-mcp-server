@@ -31,7 +31,7 @@ TOOLS: list[Tool] = [
             "type": "object",
             "properties": {
                 "n": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "description": "Number of recent events to return (default 50).",
                     "default": 50,
                 },

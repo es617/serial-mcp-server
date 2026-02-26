@@ -113,7 +113,7 @@ TOOLS: list[Tool] = [
                 "spec_id": {"type": "string"},
                 "query": {"type": "string", "description": "Search terms (space-separated)."},
                 "k": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "description": "Max results to return (default 10).",
                     "default": 10,
                 },

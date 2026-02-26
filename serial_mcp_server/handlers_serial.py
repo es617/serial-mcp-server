@@ -12,7 +12,7 @@ import serial as pyserial
 import serial.tools.list_ports
 from mcp.types import Tool
 
-from serial_mcp_server.helpers import MIRROR_PTY, MIRROR_PTY_LINK, _err, _ok
+from serial_mcp_server.helpers import MIRROR_PTY, MIRROR_PTY_LINK, _coerce_bool, _err, _ok
 from serial_mcp_server.mirror import SerialBuffer, create_reader
 from serial_mcp_server.state import SerialConnection, SerialState
 
@@ -109,12 +109,12 @@ TOOLS: list[Tool] = [
             "properties": {
                 "port": {"type": "string", "description": "Serial port path (e.g. /dev/ttyUSB0, COM3)."},
                 "baudrate": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 115200,
                     "description": "Baud rate (default 115200). Common values: 9600, 19200, 38400, 57600, 115200.",
                 },
                 "bytesize": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "enum": [5, 6, 7, 8],
                     "default": 8,
                     "description": "Data bits (default 8).",
@@ -126,23 +126,23 @@ TOOLS: list[Tool] = [
                     "description": "Parity: N(one), E(ven), O(dd), M(ark), S(pace). Default N.",
                 },
                 "stopbits": {
-                    "type": "number",
+                    "type": ["number", "string"],
                     "enum": [1, 1.5, 2],
                     "default": 1,
                     "description": "Stop bits (default 1).",
                 },
                 "timeout_ms": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 200,
                     "description": "Read timeout in milliseconds (default 200).",
                 },
                 "write_timeout_ms": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 200,
                     "description": "Write timeout in milliseconds (default 200).",
                 },
                 "exclusive": {
-                    "type": "boolean",
+                    "type": ["boolean", "string"],
                     "description": "Request exclusive access (platform-dependent, ignored if unsupported).",
                 },
                 "encoding": {
@@ -196,12 +196,12 @@ TOOLS: list[Tool] = [
             "properties": {
                 "connection_id": {"type": "string"},
                 "nbytes": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 256,
                     "description": "Maximum bytes to read (default 256).",
                 },
                 "timeout_ms": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "description": "Override read timeout for this call only (milliseconds).",
                 },
                 "as": {
@@ -228,7 +228,7 @@ TOOLS: list[Tool] = [
                     "description": "Override encoding for this call (defaults to connection encoding).",
                 },
                 "append_newline": {
-                    "type": "boolean",
+                    "type": ["boolean", "string"],
                     "default": False,
                     "description": "Append the connection's newline character after data (default false).",
                 },
@@ -257,9 +257,12 @@ TOOLS: list[Tool] = [
             "type": "object",
             "properties": {
                 "connection_id": {"type": "string"},
-                "timeout_ms": {"type": "integer", "description": "Override read timeout (milliseconds)."},
+                "timeout_ms": {
+                    "type": ["integer", "string"],
+                    "description": "Override read timeout (milliseconds).",
+                },
                 "max_bytes": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 4096,
                     "description": "Maximum bytes to read (default 4096).",
                 },
@@ -292,9 +295,12 @@ TOOLS: list[Tool] = [
                     "default": "\\n",
                     "description": "Delimiter to read until (default \\n).",
                 },
-                "timeout_ms": {"type": "integer", "description": "Override read timeout (milliseconds)."},
+                "timeout_ms": {
+                    "type": ["integer", "string"],
+                    "description": "Override read timeout (milliseconds).",
+                },
                 "max_bytes": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 4096,
                     "description": "Maximum bytes to read (default 4096).",
                 },
@@ -334,7 +340,7 @@ TOOLS: list[Tool] = [
             "type": "object",
             "properties": {
                 "connection_id": {"type": "string"},
-                "value": {"type": "boolean", "description": "True = high, False = low."},
+                "value": {"type": ["boolean", "string"], "description": "True = high, False = low."},
             },
             "required": ["connection_id", "value"],
         },
@@ -347,7 +353,7 @@ TOOLS: list[Tool] = [
             "type": "object",
             "properties": {
                 "connection_id": {"type": "string"},
-                "value": {"type": "boolean", "description": "True = high, False = low."},
+                "value": {"type": ["boolean", "string"], "description": "True = high, False = low."},
             },
             "required": ["connection_id", "value"],
         },
@@ -365,7 +371,7 @@ TOOLS: list[Tool] = [
             "properties": {
                 "connection_id": {"type": "string"},
                 "duration_ms": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 100,
                     "description": "Pulse duration in milliseconds (default 100).",
                 },
@@ -386,7 +392,7 @@ TOOLS: list[Tool] = [
             "properties": {
                 "connection_id": {"type": "string"},
                 "duration_ms": {
-                    "type": "integer",
+                    "type": ["integer", "string"],
                     "default": 100,
                     "description": "Pulse duration in milliseconds (default 100).",
                 },
@@ -431,13 +437,13 @@ async def handle_list_ports(state: SerialState, args: dict[str, Any]) -> dict[st
 
 async def handle_open(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     port = args["port"]
-    baudrate = args.get("baudrate", 115200)
-    bytesize = args.get("bytesize", 8)
+    baudrate = int(args.get("baudrate", 115200))
+    bytesize = int(args.get("bytesize", 8))
     parity = args.get("parity", "N")
-    stopbits = args.get("stopbits", 1)
-    timeout_ms = args.get("timeout_ms", 200)
-    write_timeout_ms = args.get("write_timeout_ms", 200)
-    exclusive = args.get("exclusive")
+    stopbits = float(args.get("stopbits", 1))
+    timeout_ms = int(args.get("timeout_ms", 200))
+    write_timeout_ms = int(args.get("write_timeout_ms", 200))
+    exclusive = _coerce_bool(args["exclusive"]) if "exclusive" in args else None
     encoding = args.get("encoding", "utf-8")
     newline = args.get("newline", "\r\n")
 
@@ -540,10 +546,10 @@ async def handle_connection_status(state: SerialState, args: dict[str, Any]) -> 
 
 async def handle_read(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    nbytes = min(args.get("nbytes", 256), MAX_READ_BYTES)
+    nbytes = min(int(args.get("nbytes", 256)), MAX_READ_BYTES)
     fmt = args.get("as", "text")
     timeout_ms = args.get("timeout_ms")
-    timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else conn.timeout
+    timeout_s = int(timeout_ms) / 1000.0 if timeout_ms is not None else conn.timeout
 
     raw = await asyncio.to_thread(conn.buffer.read, nbytes, timeout_s)
 
@@ -561,7 +567,7 @@ async def handle_write(state: SerialState, args: dict[str, Any]) -> dict[str, An
     data_str = args["data"]
     fmt = args.get("as", "text")
     encoding = args.get("encoding", conn.encoding)
-    append_newline = args.get("append_newline", False)
+    append_newline = _coerce_bool(args.get("append_newline", False))
     newline = args.get("newline", conn.newline)
 
     # Convert to bytes based on format
@@ -608,12 +614,12 @@ async def handle_write(state: SerialState, args: dict[str, Any]) -> dict[str, An
 
 async def handle_readline(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    max_bytes = min(args.get("max_bytes", 4096), MAX_READ_BYTES)
+    max_bytes = min(int(args.get("max_bytes", 4096)), MAX_READ_BYTES)
     fmt = args.get("as", "text")
     timeout_ms = args.get("timeout_ms")
     newline = args.get("newline", conn.newline)
     expected = newline.encode(conn.encoding, errors="replace")
-    timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else conn.timeout
+    timeout_s = int(timeout_ms) / 1000.0 if timeout_ms is not None else conn.timeout
 
     raw = await asyncio.to_thread(conn.buffer.read_until, expected, max_bytes, timeout_s)
 
@@ -629,11 +635,11 @@ async def handle_readline(state: SerialState, args: dict[str, Any]) -> dict[str,
 async def handle_read_until(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
     delimiter = args.get("delimiter", "\n")
-    max_bytes = min(args.get("max_bytes", 4096), MAX_READ_BYTES)
+    max_bytes = min(int(args.get("max_bytes", 4096)), MAX_READ_BYTES)
     fmt = args.get("as", "text")
     timeout_ms = args.get("timeout_ms")
     expected = delimiter.encode(conn.encoding, errors="replace")
-    timeout_s = timeout_ms / 1000.0 if timeout_ms is not None else conn.timeout
+    timeout_s = int(timeout_ms) / 1000.0 if timeout_ms is not None else conn.timeout
 
     raw = await asyncio.to_thread(conn.buffer.read_until, expected, max_bytes, timeout_s)
 
@@ -662,7 +668,7 @@ async def handle_flush(state: SerialState, args: dict[str, Any]) -> dict[str, An
 
 async def handle_set_dtr(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    value = bool(args["value"])
+    value = _coerce_bool(args["value"])
     conn.ser.dtr = value
     conn.last_seen_ts = time.time()
     return _ok(
@@ -673,7 +679,7 @@ async def handle_set_dtr(state: SerialState, args: dict[str, Any]) -> dict[str, 
 
 async def handle_set_rts(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    value = bool(args["value"])
+    value = _coerce_bool(args["value"])
     conn.ser.rts = value
     conn.last_seen_ts = time.time()
     return _ok(
@@ -687,7 +693,7 @@ _MAX_PULSE_MS = 10_000
 
 async def handle_pulse_dtr(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    duration_ms = min(args.get("duration_ms", 100), _MAX_PULSE_MS)
+    duration_ms = min(int(args.get("duration_ms", 100)), _MAX_PULSE_MS)
     conn.ser.dtr = False
     await asyncio.sleep(duration_ms / 1000.0)
     conn.ser.dtr = True
@@ -697,7 +703,7 @@ async def handle_pulse_dtr(state: SerialState, args: dict[str, Any]) -> dict[str
 
 async def handle_pulse_rts(state: SerialState, args: dict[str, Any]) -> dict[str, Any]:
     conn = state.get_connection(args["connection_id"])
-    duration_ms = min(args.get("duration_ms", 100), _MAX_PULSE_MS)
+    duration_ms = min(int(args.get("duration_ms", 100)), _MAX_PULSE_MS)
     conn.ser.rts = False
     await asyncio.sleep(duration_ms / 1000.0)
     conn.ser.rts = True

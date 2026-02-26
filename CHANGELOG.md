@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+### Fixed
+- Accept string-typed numeric parameters in tool schemas (`"9600"` instead of `9600`). Some MCP clients serialize all tool arguments as strings, which caused JSON Schema validation errors on `integer` and `number` fields. Affected fields: `baudrate`, `bytesize`, `stopbits`, `timeout_ms`, `write_timeout_ms`, `nbytes`, `max_bytes`, `duration_ms`, `k`, `n`.
+
 ## 0.1.0
 
 Initial release.
