@@ -140,7 +140,7 @@ Add to your project's `.vscode/mcp.json` (or create it):
 }
 ```
 
-Adjust `env` to match your needs — set `SERIAL_MCP_PLUGINS` to specific plugin names, or add `SERIAL_MCP_MIRROR` for PTY mirroring. See [Environment variables](#environment-variables) below.
+Adjust `env` to match your needs — set `SERIAL_MCP_PLUGINS` to specific plugin names, or add `SERIAL_MCP_MIRROR` for PTY mirroring.
 
 ## Environment variables
 
