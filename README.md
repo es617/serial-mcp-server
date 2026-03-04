@@ -8,7 +8,7 @@
 ![Serial](https://img.shields.io/badge/Serial-RS232%2FUART-green)
 
 A stateful serial port Model Context Protocol (MCP) server for developer tooling and AI agents.
-Works out of the box with Claude Code and any MCP-compatible runtime. Communicates over **stdio** and uses [pyserial](https://github.com/pyserial/pyserial) for cross-platform serial on macOS, Windows, and Linux.
+Works out of the box with Claude Code, VS Code with Copilot, and any MCP-compatible runtime. Communicates over **stdio** and uses [pyserial](https://github.com/pyserial/pyserial) for cross-platform serial on macOS, Windows, and Linux.
 
 > **Example:** Let Claude Code list available serial ports, connect to your microcontroller, reset it via DTR, and read the boot banner from your hardware.
 
@@ -120,6 +120,27 @@ claude mcp add serial -e SERIAL_MCP_LOG_LEVEL=DEBUG -- serial_mcp
 ```
 
 > MCP is a protocol. Claude Code is one MCP client; other agent runtimes can also connect to this server.
+
+## Add to VS Code / Copilot
+
+Add to your project's `.vscode/mcp.json` (or create it):
+
+```json
+{
+  "servers": {
+    "serial": {
+      "type": "stdio",
+      "command": "serial_mcp",
+      "args": [],
+      "env": {
+        "SERIAL_MCP_PLUGINS": "all"
+      }
+    }
+  }
+}
+```
+
+Adjust `env` to match your needs — set `SERIAL_MCP_PLUGINS` to specific plugin names, or add `SERIAL_MCP_MIRROR` for PTY mirroring. See [Environment variables](#environment-variables) below.
 
 ## Environment variables
 
