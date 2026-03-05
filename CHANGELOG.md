@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+### Added
+- VS Code / Copilot setup instructions in README (`.vscode/mcp.json`)
+- Cursor setup instructions in README (`.cursor/mcp.json`)
+- `SERIAL_MCP_TOOL_SEPARATOR` env var — configurable separator for tool names (default `.`). Set to `_` for MCP clients that reject dots in tool names (e.g. Cursor).
+
 ## 0.1.1
 
 ### Fixed

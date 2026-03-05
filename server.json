@@ -6,12 +6,12 @@
     "url": "https://github.com/es617/serial-mcp-server.git",
     "source": "github"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "serial-mcp-server",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "transport": {
         "type": "stdio"
       },
@@ -43,6 +43,13 @@
           "format": "string",
           "isSecret": false,
           "name": "SERIAL_MCP_MIRROR_LINK"
+        },
+        {
+          "description": "Tool name separator character (default '.'). Set to '_' for clients that reject dots (e.g. Cursor).",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false,
+          "name": "SERIAL_MCP_TOOL_SEPARATOR"
         }
       ]
     }

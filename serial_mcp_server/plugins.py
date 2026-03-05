@@ -177,12 +177,14 @@ class PluginManager:
         *,
         enabled: bool = False,
         allowlist: set[str] | None = None,
+        tool_separator: str = ".",
     ) -> None:
         self.plugins_dir = plugins_dir
         self._tools = tools
         self._handlers = handlers
         self.enabled = enabled
         self.allowlist = allowlist
+        self.tool_separator = tool_separator
         self.loaded: dict[str, PluginInfo] = {}
 
     @property
@@ -228,6 +230,12 @@ class PluginManager:
         self._check_allowed(self._plugin_name_from_path(plugin_path))
 
         name, tools, handlers, module_key, meta = load_plugin(plugin_path)
+
+        # Apply tool-name separator (e.g. "." → "_" for Cursor)
+        if self.tool_separator != ".":
+            for t in tools:
+                t.name = t.name.replace(".", self.tool_separator)
+            handlers = {k.replace(".", self.tool_separator): v for k, v in handlers.items()}
 
         # If already loaded, unload first (makes load idempotent)
         if name in self.loaded:
