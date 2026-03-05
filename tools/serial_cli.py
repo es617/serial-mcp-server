@@ -575,7 +575,11 @@ def cmd_help():
 
 def main():
     parser = argparse.ArgumentParser(description="Serial MCP CLI — interactive test client")
-    parser.add_argument("--separator", default=".", help="Tool name separator (default '.'). Use '_' for Cursor compatibility.")
+    parser.add_argument(
+        "--separator",
+        default=".",
+        help="Tool name separator (default '.'). Use '_' for Cursor compatibility.",
+    )
     opts = parser.parse_args()
 
     print("Serial MCP CLI — interactive test client")
