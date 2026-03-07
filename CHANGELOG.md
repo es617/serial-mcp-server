@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+### Fixed
+- Raise minimum `mcp` SDK dependency to >=1.23.0 to exclude versions with known CVEs (CVE-2025-53366, CVE-2025-53365, CVE-2025-66416). These affect HTTP/SSE transport only — stdio servers were never vulnerable — but the wider range allowed scanners to flag the package.
+
 ## 0.1.2
 
 ### Added

@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.es617/serial-mcp-server",
-  "description": "Let AI agents interact with serial devices — list ports, open connections, send commands, and read responses.",
+  "description": "Let AI agents interact with serial devices — list ports, connect, send, and read.",
   "repository": {
     "url": "https://github.com/es617/serial-mcp-server.git",
     "source": "github"
   },
-  "version": "0.1.2",
+  "version": "0.1.3",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "serial-mcp-server",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "transport": {
         "type": "stdio"
       },
